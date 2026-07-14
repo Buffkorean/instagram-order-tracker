@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Order Tracker</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-left">
+      <span class="logo">📦</span>
+      <span class="title">Live Order Tracker</span>
+    </div>
+    <div id="statusBadge" class="badge badge-waiting">Waiting...</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="orders">
+      Orders <span id="orderCount" class="count">0</span>
+    </button>
+    <button class="tab" data-tab="incomplete">
+      Needs Info <span id="incompleteCount" class="count incomplete">0</span>
+    </button>
+    <button class="tab" data-tab="settings">⚙</button>
+  </div>
+
+  <!-- Orders Panel -->
+  <div id="orders-panel" class="panel">
+    <div class="ns-bar">
+      <div class="ns-top">
+        <span class="ns-label">Now Selling</span>
+        <span id="nsDisplay" class="ns-display">Not set</span>
+      </div>
+      <div class="ns-inputs">
+        <input id="nsItem" class="ns-input" type="text" placeholder="Item name (e.g. Floral Blouse)">
+        <div class="ns-price-wrap">
+          <span class="ns-dollar">$</span>
+          <input id="nsPrice" class="ns-input ns-price" type="number" min="0" step="0.01" placeholder="0">
+        </div>
+        <button id="nsSet" class="ns-set-btn">Set</button>
+      </div>
+    </div>
+    <div id="ordersList" class="list">
+      <div class="empty">Open Instagram Live on this browser to start capturing orders.</div>
+    </div>
+  </div>
+
+  <!-- Incomplete Panel -->
+  <div id="incomplete-panel" class="panel hidden">
+    <div class="panel-note">These comments showed interest but were missing size or details. Follow up with these customers.</div>
+    <div id="incompleteList" class="list"></div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div id="settings-panel" class="panel hidden">
+    <div class="settings">
+      <label class="settings-label">Your Payment Link</label>
+      <input id="paymentLink" class="settings-input" type="text" placeholder="e.g. venmo.com/you or paypal.me/you">
+      <p class="settings-hint">This will be auto-filled in every DM message you copy.</p>
+      <button id="saveBtn" class="btn btn-secondary">Save</button>
+
+      <div class="divider"></div>
+
+      <label class="settings-label">How to use</label>
+      <ol class="how-to">
+        <li>Open Instagram Live in this browser window</li>
+        <li>This extension captures orders automatically</li>
+        <li>Click <strong>Copy DM</strong> next to each order</li>
+        <li>Paste into Instagram DM and fill in item + price</li>
+        <li>Click <strong>Download Excel</strong> after the live</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <button id="downloadBtn" class="btn btn-primary">⬇ Download Excel</button>
+    <button id="popoutBtn" class="btn btn-secondary" title="Open in a separate window so you can keep it visible">⤢ Pop Out</button>
+    <button id="clearBtn" class="btn btn-danger">🗑 New Session</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
