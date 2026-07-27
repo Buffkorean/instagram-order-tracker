@@ -106,27 +106,55 @@
   }
 
   // ── DOM extraction ────────────────────────────────────────────────────────
-  // Looks for Instagram username links (href="/username/") inside a node,
-  // then extracts the surrounding comment text.
   const SKIP_USERNAMES = new Set([
-    'explore', 'reels', 'stories', 'direct', 'accounts', 'p', 'tv', 'about', 'help'
+    'explore', 'reels', 'stories', 'direct', 'accounts', 'p', 'tv', 'about', 'help',
+    'reply', 'like', 'likes', 'view', 'views', 'add', 'comment', 'comments',
+    'share', 'follow', 'following', 'followers', 'message', 'live', 'watch',
+    'send', 'more', 'less', 'see', 'load', 'show', 'hide', 'close', 'open',
+    'login', 'signup', 'instagram', 'meta', 'verified'
   ]);
+
+  const USERNAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9._]{3,29}$/;
+  const UI_NOISE = /\b(Reply|Replies|Like|Likes|View replies|Hide replies|Load more)\b/gi;
 
   function tryExtract(node) {
     if (node.nodeType !== Node.ELEMENT_NODE) return null;
-    const text = node.textContent.trim();
-    if (!text || text.length < 2 || text.length > 400) return null;
+    const rawText = node.textContent.trim();
+    if (!rawText || rawText.length < 3 || rawText.length > 400) return null;
 
+    // Method 1: <a href="/username/"> anchor links (regular feed)
     for (const link of node.querySelectorAll('a[href]')) {
       const href = link.getAttribute('href') || '';
       const m = href.match(/^\/([a-zA-Z0-9._]{1,30})\/?$/);
-      if (!m || SKIP_USERNAMES.has(m[1])) continue;
-
+      if (!m || SKIP_USERNAMES.has(m[1].toLowerCase())) continue;
       const username = m[1];
-      const commentText = text.replace(username, '').replace(/^[\s:·•\-]+/, '').trim();
-      if (commentText.length < 1) continue;
-      return { username, text: commentText };
+      const commentText = rawText.replace(username, '').replace(/^[\s:·•\-]+/, '').trim();
+      if (commentText.length >= 1) return { username, text: commentText };
     }
+
+    // Method 2: child element whose entire text looks like a username
+    // (Instagram Live renders username in a dedicated child span/div)
+    for (const child of node.children) {
+      const childText = child.textContent.trim();
+      if (!USERNAME_RE.test(childText) || SKIP_USERNAMES.has(childText.toLowerCase())) continue;
+      const rest = Array.from(node.children)
+        .filter(c => c !== child)
+        .map(c => c.textContent.trim())
+        .join(' ')
+        .replace(UI_NOISE, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (rest.length >= 1) return { username: childText, text: rest };
+    }
+
+    // Method 3: parse "username<space>comment" from raw text
+    // Strip common UI noise first
+    const cleaned = rawText.replace(UI_NOISE, '').replace(/\s+/g, ' ').trim();
+    const m3 = cleaned.match(/^([a-zA-Z0-9][a-zA-Z0-9._]{3,29})\s+(.{1,300})$/s);
+    if (m3 && !SKIP_USERNAMES.has(m3[1].toLowerCase())) {
+      return { username: m3[1], text: m3[2].trim() };
+    }
+
     return null;
   }
 
