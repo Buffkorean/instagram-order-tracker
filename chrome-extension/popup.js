@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   updateNsDisplay();
   renderAll(stored.orders || []);
+  Analytics.track('popup_opened');
 
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== 'local') return;
@@ -195,6 +196,7 @@ function download() {
   const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
 
   // BOM so Excel reads Korean characters correctly
+  Analytics.track('excel_downloaded', { order_count: all.length });
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -212,6 +214,7 @@ function csvCell(text) {
 async function clearSession() {
   const ok = confirm('Start a new session?\n\nMake sure you have already downloaded the Excel file for this live!');
   if (!ok) return;
+  Analytics.track('session_cleared');
   await chrome.storage.local.set({ clearSignal: true });
   await chrome.storage.local.remove(['orders']);
   renderAll([]);
