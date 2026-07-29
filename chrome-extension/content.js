@@ -33,12 +33,38 @@
     'purple', 'yellow', 'orange', 'gray', 'grey', 'beige', 'brown',
     'cream', 'ivory', 'mint', 'lavender', 'khaki', 'camel'
   ];
-  const COLORS_KR = [
-    '블랙', '화이트', '블루', '네이비', '레드', '그린', '핑크',
-    '퍼플', '옐로우', '오렌지', '그레이', '베이지', '브라운',
-    '크림', '아이보리', '민트', '라벤더', '카키', '카멜',
-    '검정', '검은색', '흰색', '파랑', '파란색', '빨강', '빨간색',
-    '초록', '초록색', '분홍', '분홍색', '보라', '노랑', '회색', '갈색'
+  // Regex-based Korean color patterns — catches adjective forms (빨간거, 파란색으로)
+  // and loanwords (블랙, 네이비, etc.)
+  const COLOR_PATTERNS_KR = [
+    { re: /빨간(?:거|색|것|색으로)?|빨강/, label: '빨강' },
+    { re: /파란(?:거|색|것|색으로)?|파랑/, label: '파랑' },
+    { re: /검은(?:거|것)?|검정(?:으로|이요)?|검은색|검정색?/, label: '검정' },
+    { re: /하얀(?:거|것)?|흰(?:거|색|것)?|흰색/, label: '흰색' },
+    { re: /노란(?:거|색|것)?|노랑/, label: '노랑' },
+    { re: /초록(?:거|색|것)?/, label: '초록' },
+    { re: /분홍(?:거|색|것)?/, label: '분홍' },
+    { re: /보라(?:거|색|것)?/, label: '보라' },
+    { re: /갈색(?:거|것)?/, label: '갈색' },
+    { re: /회색(?:거|것)?/, label: '회색' },
+    { re: /블랙/, label: '블랙' },
+    { re: /화이트/, label: '화이트' },
+    { re: /블루/, label: '블루' },
+    { re: /네이비/, label: '네이비' },
+    { re: /레드/, label: '레드' },
+    { re: /그린/, label: '그린' },
+    { re: /핑크/, label: '핑크' },
+    { re: /퍼플/, label: '퍼플' },
+    { re: /옐로우?/, label: '옐로우' },
+    { re: /오렌지/, label: '오렌지' },
+    { re: /그레이/, label: '그레이' },
+    { re: /베이지/, label: '베이지' },
+    { re: /브라운/, label: '브라운' },
+    { re: /크림/, label: '크림' },
+    { re: /아이보리/, label: '아이보리' },
+    { re: /민트/, label: '민트' },
+    { re: /라벤더/, label: '라벤더' },
+    { re: /카키/, label: '카키' },
+    { re: /카멜/, label: '카멜' },
   ];
 
   // ── State ─────────────────────────────────────────────────────────────────
@@ -63,12 +89,14 @@
     const size = sizeMatch ? sizeMatch[0].toUpperCase() : null;
 
     let qty = null;
+    let explicitQty = false;
     const qtyMatch = text.match(QTY_RE);
     if (qtyMatch) {
       qty = parseInt(qtyMatch[1]);
+      explicitQty = true;
     } else {
       for (const [word, num] of Object.entries(QTY_KR)) {
-        if (text.includes(word)) { qty = num; break; }
+        if (text.includes(word)) { qty = num; explicitQty = true; break; }
       }
     }
     if (!qty) qty = 1;
@@ -78,15 +106,18 @@
       if (lower.includes(c)) { color = c[0].toUpperCase() + c.slice(1); break; }
     }
     if (!color) {
-      for (const c of COLORS_KR) {
-        if (text.includes(c)) { color = c; break; }
+      for (const { re, label } of COLOR_PATTERNS_KR) {
+        if (re.test(text)) { color = label; break; }
       }
     }
 
+    // Order = clear intent + at least one detail (size, color, or explicit quantity)
+    // e.g. "빨간거 하나 주세요" → order; "주세요" alone → incomplete
+    const hasOrderIntent = hasENIntent || hasKRIntent;
     let status;
-    if ((hasENIntent || hasKRIntent) && size) {
-      status = 'order';
-    } else if (hasENIntent || hasKRIntent || hasIncomplete) {
+    if (hasOrderIntent) {
+      status = (size || color || explicitQty) ? 'order' : 'incomplete';
+    } else if (hasIncomplete) {
       status = 'incomplete';
     } else {
       status = 'filtered';
