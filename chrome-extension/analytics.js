@@ -6,8 +6,8 @@
 // 2. Copy the Measurement ID (looks like G-XXXXXXXXXX)
 // 3. Under that stream, open "Measurement Protocol API secrets" → create one
 // 4. Paste both values here, then reload the extension and resubmit to the Store
-const GA4_MEASUREMENT_ID = 'G-XXXXXXXXXX';
-const GA4_API_SECRET     = 'XXXXXXXXXXXXXXXXXX';
+const GA4_MEASUREMENT_ID = 'G-SXN6VOXTDH';
+const GA4_API_SECRET     = 'cpDOTPnRQz-QmgqJwlrnWw';
 
 const ENDPOINT = `https://www.google-analytics.com/mp/collect?measurement_id=${GA4_MEASUREMENT_ID}&api_secret=${GA4_API_SECRET}`;
 
