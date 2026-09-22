@@ -32,15 +32,27 @@
   <ul>
     <li><strong>Instagram Live comment text and usernames</strong> — read directly from the Instagram page open in your browser to identify order comments.</li>
     <li><strong>Your payment link</strong> — a URL you optionally type into the Settings tab (e.g., Venmo or PayPal link).</li>
+    <li><strong>Microphone audio</strong> — only if you turn on the optional "🎙 Auto-detect" feature. It is off by default. See "Auto-detect (Microphone) Feature" below.</li>
   </ul>
 
   <h2>How Data Is Stored</h2>
-  <p>All data is stored <strong>locally in your browser only</strong> using <code>chrome.storage.local</code>. This includes:</p>
+  <p>Order data and settings are stored <strong>locally in your browser only</strong> using <code>chrome.storage.local</code>. This includes:</p>
   <ul>
     <li>Captured order details (username, size, color, quantity, timestamp, original comment)</li>
     <li>Your payment link (if entered)</li>
+    <li>Your backend API key (if you enable Auto-detect)</li>
   </ul>
-  <p>Data is never transmitted to any external server, third party, or the extension developer. It stays entirely on your device.</p>
+  <p>This data is never transmitted anywhere except as described in "Auto-detect (Microphone) Feature" below — order comment data itself always stays on your device.</p>
+
+  <h2>Auto-detect (Microphone) Feature</h2>
+  <p>Auto-detect is an <strong>optional, off-by-default</strong> feature. If you turn it on, the extension:</p>
+  <ul>
+    <li>Requests microphone access (Chrome will prompt you to allow this the first time)</li>
+    <li>Records short (~20 second) rolling audio clips of you describing items during your live</li>
+    <li>Sends each clip to our backend server, which forwards it to <a href="https://groq.com">Groq</a> for speech-to-text transcription and to <a href="https://www.anthropic.com">Anthropic (Claude)</a> to identify what item is being described</li>
+    <li>Uses the result to auto-fill the "Now Selling" item name and price</li>
+  </ul>
+  <p>Audio clips and transcripts are processed in real time and are <strong>not stored</strong> by our backend server after a response is returned. Groq and Anthropic process this data as sub-processors under their own privacy policies (<a href="https://groq.com/privacy-policy/">Groq's Privacy Policy</a>, <a href="https://www.anthropic.com/legal/privacy">Anthropic's Privacy Policy</a>) and may retain it briefly per those policies (e.g., for abuse monitoring). This feature requires a backend API key that only the extension's distributor can issue — it will not function without one.</p>
 
   <h2>Analytics</h2>
   <p>The extension collects anonymous, aggregated usage data via Google Analytics to help us understand how the extension is used and improve it. This includes:</p>
@@ -52,16 +64,18 @@
   <p>No personally identifiable information is collected through analytics. Instagram usernames, comment text, order details, and payment links are <strong>never</strong> sent to analytics. Google Analytics may associate your data with an approximate location (country level) based on IP address. See <a href="https://policies.google.com/privacy">Google's Privacy Policy</a> for details.</p>
 
   <h2>Data Sharing</h2>
-  <p>We do not sell or rent any data. Anonymous usage data is shared with Google Analytics as described above. No other third parties receive any data from this extension.</p>
+  <p>We do not sell or rent any data. Anonymous usage data is shared with Google Analytics as described above. If you enable Auto-detect, audio clips are shared with Groq and Anthropic solely to power that feature, as described above. No other third parties receive any data from this extension.</p>
 
   <h2>Data Retention</h2>
-  <p>Order data remains in local storage until you click "New Session" in the extension popup, which clears it. Uninstalling the extension also removes all stored data.</p>
+  <p>Order data remains in local storage until you click "New Session" in the extension popup, which clears it. Uninstalling the extension also removes all stored data. Audio clips sent for Auto-detect are not retained by our backend server after processing.</p>
 
   <h2>Permissions Used</h2>
   <ul>
-    <li><strong>storage</strong> — to save captured orders and your payment link locally in the browser.</li>
+    <li><strong>storage</strong> — to save captured orders, settings, and your payment link locally in the browser.</li>
     <li><strong>windows</strong> — to support the "Pop Out" feature that opens the popup in a separate window.</li>
+    <li><strong>offscreen</strong> — to run microphone capture in the background while Auto-detect is on. Only used if you enable that feature.</li>
     <li><strong>instagram.com host permission</strong> — to read the live comment feed on Instagram pages so orders can be captured in real time. No data from Instagram is sent anywhere.</li>
+    <li><strong>speaksuccess.kr host permission</strong> — used only when Auto-detect is on, to send audio clips to our backend for processing as described above.</li>
   </ul>
 
   <h2>Children's Privacy</h2>
