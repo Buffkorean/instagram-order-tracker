@@ -40,6 +40,10 @@
         </div>
         <button id="nsSet" class="ns-set-btn">Set</button>
       </div>
+      <div class="ns-auto-row">
+        <button id="nsAutoToggle" class="ns-auto-btn">🎙 Auto-detect: Off</button>
+        <span id="nsAutoStatus" class="ns-auto-status"></span>
+      </div>
     </div>
     <div id="ordersList" class="list">
       <div class="empty">Open Instagram Live on this browser to start capturing orders.</div>
@@ -58,6 +62,11 @@
       <label class="settings-label">Your Payment Link</label>
       <input id="paymentLink" class="settings-input" type="text" placeholder="e.g. venmo.com/you or paypal.me/you">
       <p class="settings-hint">This will be auto-filled in every DM message you copy.</p>
+
+      <label class="settings-label">Backend API Key (Auto-detect)</label>
+      <input id="trackerKey" class="settings-input" type="text" placeholder="Paste the key from your backend">
+      <p class="settings-hint">Enables 🎙 Auto-detect on the Orders tab — listens to your mic and guesses the item being described.</p>
+
       <button id="saveBtn" class="btn btn-secondary">Save</button>
 
       <div class="divider"></div>

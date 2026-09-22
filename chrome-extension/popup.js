@@ -3,13 +3,17 @@
 let orders = [];
 let incomplete = [];
 let paymentLink = '';
+let trackerKey = '';
 let currentItem = { name: '', price: '' };
+let autoDetectStatus = { listening: false };
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  const stored = await chrome.storage.local.get(['orders', 'paymentLink', 'currentItem']);
+  const stored = await chrome.storage.local.get(['orders', 'paymentLink', 'trackerKey', 'currentItem', 'autoDetectStatus']);
   paymentLink = stored.paymentLink || '';
   document.getElementById('paymentLink').value = paymentLink;
+  trackerKey = stored.trackerKey || '';
+  document.getElementById('trackerKey').value = trackerKey;
 
   if (stored.currentItem) {
     currentItem = stored.currentItem;
@@ -17,6 +21,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('nsPrice').value = currentItem.price || '';
   }
   updateNsDisplay();
+  autoDetectStatus = stored.autoDetectStatus || { listening: false };
+  renderAutoStatus();
   renderAll(stored.orders || []);
   Analytics.track('popup_opened');
 
@@ -26,6 +32,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (changes.currentItem) {
       currentItem = changes.currentItem.newValue || { name: '', price: '' };
       updateNsDisplay();
+    }
+    if (changes.autoDetectStatus) {
+      autoDetectStatus = changes.autoDetectStatus.newValue || { listening: false };
+      renderAutoStatus();
     }
   });
 
@@ -38,6 +48,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('saveBtn').addEventListener('click', saveSettings);
   document.getElementById('popoutBtn').addEventListener('click', popOut);
   document.getElementById('nsSet').addEventListener('click', setCurrentItem);
+  document.getElementById('nsAutoToggle').addEventListener('click', toggleAutoDetect);
 });
 
 // ── Now Selling ────────────────────────────────────────────────────────────
@@ -223,10 +234,62 @@ async function clearSession() {
 // ── Settings ──────────────────────────────────────────────────────────────
 async function saveSettings() {
   paymentLink = document.getElementById('paymentLink').value.trim();
-  await chrome.storage.local.set({ paymentLink });
+  trackerKey = document.getElementById('trackerKey').value.trim();
+  await chrome.storage.local.set({ paymentLink, trackerKey });
   const btn = document.getElementById('saveBtn');
   btn.textContent = '✓ Saved!';
   setTimeout(() => (btn.textContent = 'Save'), 2000);
+}
+
+// ── Auto-detect (mic → transcription → item extraction) ────────────────────
+async function toggleAutoDetect() {
+  if (autoDetectStatus.listening) {
+    chrome.runtime.sendMessage({ type: 'STOP_AUTO_DETECT' });
+    autoDetectStatus = { ...autoDetectStatus, listening: false };
+    renderAutoStatus();
+    Analytics.track('auto_detect_stopped');
+    return;
+  }
+
+  if (!trackerKey) {
+    switchTab('settings');
+    alert('Add your Backend API Key in Settings first to enable Auto-detect.');
+    return;
+  }
+
+  // Requesting getUserMedia here (a visible page, in direct response to this
+  // click) is what triggers Chrome's mic permission prompt the first time.
+  // Once granted, the offscreen document can capture without re-prompting.
+  try {
+    const probe = await navigator.mediaDevices.getUserMedia({ audio: true });
+    probe.getTracks().forEach(t => t.stop());
+  } catch (err) {
+    alert('Microphone access is required for Auto-detect. Please allow it and try again.');
+    return;
+  }
+
+  chrome.runtime.sendMessage({ type: 'START_AUTO_DETECT' });
+  autoDetectStatus = { ...autoDetectStatus, listening: true, error: null };
+  renderAutoStatus();
+  Analytics.track('auto_detect_started');
+}
+
+function renderAutoStatus() {
+  const btn = document.getElementById('nsAutoToggle');
+  const status = document.getElementById('nsAutoStatus');
+  btn.textContent = autoDetectStatus.listening ? '🎙 Auto-detect: On' : '🎙 Auto-detect: Off';
+  btn.classList.toggle('ns-auto-btn--on', !!autoDetectStatus.listening);
+
+  if (autoDetectStatus.error) {
+    status.textContent = autoDetectStatus.error;
+    status.classList.add('ns-auto-status--error');
+  } else if (autoDetectStatus.lastTranscript) {
+    status.textContent = `Heard: "${autoDetectStatus.lastTranscript}"`;
+    status.classList.remove('ns-auto-status--error');
+  } else {
+    status.textContent = '';
+    status.classList.remove('ns-auto-status--error');
+  }
 }
 
 // ── Pop out ───────────────────────────────────────────────────────────────
