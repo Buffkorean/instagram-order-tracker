@@ -284,3 +284,32 @@ body {
 }
 .ns-set-btn:hover       { background: #16a34a; }
 .ns-set-btn--done       { background: #16a34a; }
+
+.ns-auto-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.ns-auto-btn {
+  flex-shrink: 0;
+  padding: 4px 9px;
+  background: white;
+  color: #555;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.ns-auto-btn:hover      { border-color: #22c55e; }
+.ns-auto-btn--on        { background: #22c55e; color: white; border-color: #22c55e; }
+.ns-auto-status {
+  font-size: 11px;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ns-auto-status--error  { color: #dc2626; }
