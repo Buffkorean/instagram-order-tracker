@@ -257,14 +257,22 @@ async function toggleAutoDetect() {
     return;
   }
 
-  // Requesting getUserMedia here (a visible page, in direct response to this
-  // click) is what triggers Chrome's mic permission prompt the first time.
-  // Once granted, the offscreen document can capture without re-prompting.
+  // Check mic permission without requesting it here — the action popup can
+  // be closed by Chrome when the permission prompt takes focus, which would
+  // silently kill a getUserMedia() call made directly in this popup. If not
+  // already granted, send the user to a persistent tab (permission.html)
+  // where the prompt can reliably complete instead.
+  let micGranted = false;
   try {
-    const probe = await navigator.mediaDevices.getUserMedia({ audio: true });
-    probe.getTracks().forEach(t => t.stop());
+    const status = await navigator.permissions.query({ name: 'microphone' });
+    micGranted = status.state === 'granted';
   } catch (err) {
-    alert('Microphone access is required for Auto-detect. Please allow it and try again.');
+    micGranted = false;
+  }
+
+  if (!micGranted) {
+    chrome.tabs.create({ url: chrome.runtime.getURL('permission.html') });
+    alert('A new tab opened to enable your microphone. Click "Allow" there, then come back and click Auto-detect again.');
     return;
   }
 
