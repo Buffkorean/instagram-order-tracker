@@ -54,4 +54,42 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     chrome.storage.local.set(message.items).then(() => sendResponse({ ok: true }));
     return true;
   }
+
+  if (message?.type === 'UPLOAD_AUDIO_CHUNK') {
+    uploadAudioChunk(message).then(sendResponse);
+    return true;
+  }
 });
+
+// www.speaksuccess.kr directly, not the bare apex domain — the apex 308s to
+// www, and that redirect hop isn't covered by this extension's declared
+// host_permissions the same way, which was silently breaking the request.
+const API_BASE = 'https://www.speaksuccess.kr';
+
+async function uploadAudioChunk({ base64Audio, currentItem, trackerKey }) {
+  try {
+    const byteChars = atob(base64Audio);
+    const byteNumbers = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) byteNumbers[i] = byteChars.charCodeAt(i);
+    const blob = new Blob([new Uint8Array(byteNumbers)], { type: 'audio/webm' });
+
+    const form = new FormData();
+    form.append('audio', blob, 'chunk.webm');
+    if (currentItem) form.append('currentItem', JSON.stringify(currentItem));
+
+    const res = await fetch(`${API_BASE}/api/live-order-tracker/detect-item`, {
+      method: 'POST',
+      headers: { 'x-tracker-key': trackerKey },
+      body: form,
+    });
+
+    if (!res.ok) {
+      return { ok: false, error: `Backend error ${res.status}` };
+    }
+
+    const data = await res.json();
+    return { ok: true, data };
+  } catch (err) {
+    return { ok: false, error: String((err && err.message) || err) };
+  }
+}
