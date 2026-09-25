@@ -41,4 +41,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     sendResponse({ ok: true });
     return true;
   }
+
+  // The offscreen document's access to chrome.storage directly is
+  // unreliable in practice, so it routes reads/writes through here instead
+  // — the service worker always has full API access.
+  if (message?.type === 'STORAGE_GET') {
+    chrome.storage.local.get(message.keys).then(sendResponse);
+    return true;
+  }
+
+  if (message?.type === 'STORAGE_SET') {
+    chrome.storage.local.set(message.items).then(() => sendResponse({ ok: true }));
+    return true;
+  }
 });

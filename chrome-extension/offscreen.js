@@ -13,6 +13,24 @@ const CHUNK_MS = 20000;
 let capturing = false;
 let stream = null;
 
+// chrome.storage access from inside an offscreen document has proven
+// unreliable in practice (throws "Cannot read properties of undefined
+// (reading 'local')"), so route it through the background service worker
+// via messaging instead — that's already proven to work (it's how capture
+// gets started in the first place).
+function storageGet(keys) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ type: 'STORAGE_GET', keys }, (response) => {
+      resolve(response || {});
+    });
+  });
+}
+function storageSet(items) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage({ type: 'STORAGE_SET', items }, () => resolve());
+  });
+}
+
 async function startCapture() {
   if (capturing) return;
   try {
@@ -57,7 +75,7 @@ function cycleRecorder() {
 }
 
 async function processChunk(blob) {
-  const { currentItem, trackerKey } = await chrome.storage.local.get(['currentItem', 'trackerKey']);
+  const { currentItem, trackerKey } = await storageGet(['currentItem', 'trackerKey']);
   if (!trackerKey) {
     await reportStatus({ error: 'No backend API key set — add it in Settings.' });
     return;
@@ -85,7 +103,7 @@ async function processChunk(blob) {
     const name = String(data.item).trim();
     const alreadySet = currentItem?.name?.trim().toLowerCase() === name.toLowerCase();
     if (name && !alreadySet) {
-      await chrome.storage.local.set({
+      await storageSet({
         currentItem: {
           name,
           price: data.price != null ? String(data.price) : (currentItem?.price || ''),
@@ -96,8 +114,8 @@ async function processChunk(blob) {
 }
 
 async function reportStatus(patch) {
-  const { autoDetectStatus } = await chrome.storage.local.get(['autoDetectStatus']);
-  await chrome.storage.local.set({
+  const { autoDetectStatus } = await storageGet(['autoDetectStatus']);
+  await storageSet({
     autoDetectStatus: { ...(autoDetectStatus || {}), ...patch },
   });
 }
