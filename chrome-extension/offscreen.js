@@ -7,7 +7,6 @@
 // standalone decodable webm file, and posts each chunk to the tracker
 // backend for transcription + item extraction.
 
-const API_BASE = 'https://speaksuccess.kr';
 const CHUNK_MS = 20000;
 
 let capturing = false;
@@ -81,22 +80,26 @@ async function processChunk(blob) {
     return;
   }
 
-  const form = new FormData();
-  form.append('audio', blob, 'chunk.webm');
-  if (currentItem) form.append('currentItem', JSON.stringify(currentItem));
+  // The network request itself is relayed through background.js rather than
+  // fetched directly here — after finding chrome.storage unreliable inside
+  // an offscreen document, the actual fetch() is relocated too rather than
+  // risking the same class of undocumented restriction.
+  const arrayBuffer = await blob.arrayBuffer();
+  const base64Audio = arrayBufferToBase64(arrayBuffer);
 
-  const res = await fetch(`${API_BASE}/api/live-order-tracker/detect-item`, {
-    method: 'POST',
-    headers: { 'x-tracker-key': trackerKey },
-    body: form,
+  const response = await new Promise((resolve) => {
+    chrome.runtime.sendMessage(
+      { type: 'UPLOAD_AUDIO_CHUNK', base64Audio, currentItem, trackerKey },
+      (res) => resolve(res)
+    );
   });
 
-  if (!res.ok) {
-    await reportStatus({ error: `Backend error ${res.status}` });
+  if (!response || !response.ok) {
+    await reportStatus({ error: response?.error || 'Backend request failed' });
     return;
   }
 
-  const data = await res.json();
+  const data = response.data;
   await reportStatus({ lastTranscript: data.transcript || '', lastCheckedAt: Date.now(), error: null });
 
   if (data.confident && data.item) {
@@ -111,6 +114,16 @@ async function processChunk(blob) {
       });
     }
   }
+}
+
+function arrayBufferToBase64(buffer) {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
 }
 
 async function reportStatus(patch) {
