@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Live Order Tracker",
   "description": "Captures Instagram Live orders in real-time and exports to Excel",
-  "version": "1.0",
+  "version": "1.2",
   "permissions": ["storage", "windows", "offscreen"],
   "host_permissions": ["https://www.google-analytics.com/", "https://speaksuccess.kr/*"],
   "background": {
